@@ -1,0 +1,53 @@
+require "test_helper"
+
+class Storage::ReconcileJobTest < ActiveJob::TestCase
+  setup do
+    Current.session = sessions(:david)
+    @account = accounts("37s")
+    # Use fresh board with no fixture attachments
+    @board = @account.boards.create!(name: "Test Board", creator: users(:david))
+    @card = @board.cards.create!(title: "Test Card", creator: users(:david))
+  end
+
+  test "reconcile_storage corrects drift when ledger undercounts" do
+    @card.image.attach io: StringIO.new("x" * 1000), filename: "test.png", content_type: "image/png"
+
+    # Delete entry to simulate drift
+    Storage::Entry.where(board: @board).delete_all
+
+    Storage::ReconcileJob.perform_now(@board)
+
+    entry = Storage::Entry.find_by(board: @board, operation: "reconcile")
+    assert_not_nil entry
+    assert_equal 1000, entry.delta
+  end
+
+  test "reconcile_storage corrects drift when ledger overcounts" do
+    # Create fake ledger entry with no real attachment
+    Storage::Entry.create! \
+      account_id: @account.id,
+      board_id: @board.id,
+      delta: 5000,
+      operation: "attach"
+
+    Storage::ReconcileJob.perform_now(@board)
+
+    entry = Storage::Entry.find_by(board: @board, operation: "reconcile")
+    assert_not_nil entry
+    assert_equal(-5000, entry.delta)
+  end
+
+  test "reconcile_storage creates no entry when ledger matches reality" do
+    @card.image.attach io: StringIO.new("x" * 1000), filename: "test.png", content_type: "image/png"
+
+    initial_count = Storage::Entry.where(board: @board).count
+
+    Storage::ReconcileJob.perform_now(@board)
+
+    assert_equal initial_count, Storage::Entry.where(board: @board).count
+  end
+
+  test "job queued to backend queue" do
+    assert_equal "backend", Storage::ReconcileJob.new.queue_name
+  end
+end
