@@ -2,9 +2,9 @@ Rails.application.routes.draw do
   root "events#index"
 
   namespace :account do
+    resource :entropy
     resource :join_code
     resource :settings
-    resource :entropy
     resources :exports, only: [ :create, :show ]
   end
 
@@ -235,6 +235,5 @@ Rails.application.routes.draw do
 
   namespace :admin do
     mount MissionControl::Jobs::Engine, at: "/jobs"
-    get "stats", to: "stats#show"
   end
 end
