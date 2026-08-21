@@ -117,7 +117,7 @@ GEM
   specs:
     action_text-trix (2.1.18)
       railties
-    addressable (2.8.8)
+    addressable (2.9.0)
       public_suffix (>= 2.0.2, < 8.0)
     ast (2.4.3)
     autotuner (1.1.0)
@@ -332,7 +332,7 @@ GEM
       actionpack (>= 7.0.0)
       activesupport (>= 7.0.0)
       rack
-    public_suffix (7.0.0)
+    public_suffix (7.0.5)
     puma (7.1.0)
       nio4r (~> 2.0)
     raabro (1.4.0)
